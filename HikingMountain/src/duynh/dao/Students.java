@@ -93,7 +93,7 @@ public class Students {
         // ===== Tuition fee discount =====
         if (Acceptable.isValid(phone, Acceptable.VIETTEL_VALID)
                 || Acceptable.isValid(phone, Acceptable.VNPT_VALID)) {
-            fee *= 0.65;
+            fee *= 0.65; // Nếu là Viettel hoặc VNPT thì discount 35%
         }
 
         // ===== Add student =====
@@ -204,7 +204,7 @@ public class Students {
         String studentCode = sc.nextLine().trim();
 
         Student found = null;
-        for (Student s : studentList) {   // Dùng studentList của DAO
+        for (Student s : studentList) {
             if (s.getId().equalsIgnoreCase(studentCode)) {
                 found = s;
                 break;
@@ -242,12 +242,13 @@ public class Students {
 
         List<Student> results = new ArrayList<>();
 
-        for (Student s : studentList) {
-            if (s.getName().toLowerCase().contains(keyword)) {
-                results.add(s);
-            }
-        }
-
+       for (Student s : studentList) {
+           if(s.getName().toLowerCase().contains(keyword)) {
+               results.add(s);
+           }
+       }
+       
+       
         if (results.isEmpty()) {
             System.out.println("No one matches the search criteria!");
         } else {
@@ -303,8 +304,9 @@ public class Students {
             return;
         }
 
-        // Map lưu: mountainCode -> [count, totalFee]
+        
         java.util.Map<String, double[]> stats = new java.util.HashMap<>();
+        
 
         for (Student s : studentList) {
             String code = s.getMountainCode();
@@ -312,7 +314,7 @@ public class Students {
 
             stats.putIfAbsent(code, new double[2]);
             stats.get(code)[0]++;        // count
-            stats.get(code)[1] += fee;   // sum
+            stats.get(code)[1] += fee;   // total
         }
 
         System.out.println("Statistics of Registration by Mountain Peak:");
@@ -334,21 +336,33 @@ public class Students {
     }
 
     // Function 8: Save data to file (Object Serialization)
+    @SuppressWarnings("unchecked")
     public void saveToFile(String fileName) {
-        if (studentList.isEmpty()) {
-            System.out.println("No registration data to save!");
-            return;
-        }
+        try {
+            java.io.File f = new java.io.File(fileName);
 
-        try ( java.io.ObjectOutputStream oos
-                = new java.io.ObjectOutputStream(new java.io.FileOutputStream(fileName))) {
+            if (studentList.isEmpty() && f.exists() && f.length() > 0) {
+                try ( java.io.ObjectInputStream ois
+                        = new java.io.ObjectInputStream(new java.io.FileInputStream(f))) {
+                    studentList = (List<Student>) ois.readObject();
+                    System.out.println("Data loaded successfully from '" + fileName + "'.");
+                    return;
+                } catch (Exception e) {
+                    System.out.println("Error loading existing data: " + e.getMessage());
+                }
+            }
 
-            oos.writeObject(studentList);  // ghi toàn bộ list
-            oos.flush();
+            if (!studentList.isEmpty()) {
+                try ( java.io.ObjectOutputStream oos
+                        = new java.io.ObjectOutputStream(new java.io.FileOutputStream(fileName))) {
+                    oos.writeObject(studentList);
+                    oos.flush();
+                    System.out.println("Data saved successfully to '" + fileName + "'.");
+                }
+            }
 
-            System.out.println("Registration data has been successfully saved to '" + fileName + "'.");
         } catch (Exception e) {
-            System.out.println("Error saving data: " + e.getMessage());
+            System.out.println("Error saving/loading data: " + e.getMessage());
         }
     }
 
